@@ -1,0 +1,2 @@
+traefik/certs/*.pem
+traefik/letsencrypt/acme.json
