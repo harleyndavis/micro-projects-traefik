@@ -57,6 +57,7 @@ services:
     labels:
       # Enable self‑routing
       - "traefik.enable=true"
+
       # Dashboard router
       - "traefik.http.routers.dashboard.rule=(Host(`dashboard.${TRAEFIK_DASHBOARD_HOST:-localhost}`) || (Host(`${TRAEFIK_DASHBOARD_HOST:-localhost}`)) && (PathPrefix(`/dashboard/`) || PathPrefix(`/api`)))"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
