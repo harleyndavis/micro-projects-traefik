@@ -1,2 +1,3 @@
 traefik/certs/*.pem
-traefik/letsencrypt/acme.json
+traefik/letsencrypt/
+traefik/dynamic/dashboard-users.htpasswd

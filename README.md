@@ -7,13 +7,15 @@ Current layout:
 ```text
 docs/
   vps-setup.md
+  automating-deployment-summary.md
+  production-hardening.md
 example-app/
 traefik/
   .env.example
   docker-compose.yml
   certs/
   dynamic/
-    dashboard-users.htpasswd
+    dashboard-users.htpasswd.example
     tls.yaml
   letsencrypt/
 ```
@@ -89,20 +91,27 @@ CERT_RESOLVER=
 
 With these values Traefik serves TLS using the file-provider certs in `./certs/` and does not contact Let's Encrypt.
 
-### 3. Hash The Admin Password
+### 3. Set Up The Admin Password File
 
-The dashboard uses file-based basic auth from `traefik/dynamic/dashboard-users.htpasswd`.
+The dashboard uses file-based basic auth. A dummy credentials file is included to make local setup easier.
 
-Generate a bcrypt entry with Docker:
+Copy the example file:
+
+```bash
+cp traefik/dynamic/dashboard-users.htpasswd.example traefik/dynamic/dashboard-users.htpasswd
+```
+
+The example file contains a dummy `admin` account with the password `choose-good-password`. For local development this is fine to use as-is.
+
+To set your own password, generate a bcrypt entry with Docker and replace the file contents:
 
 ```bash
 docker run --rm httpd:2.4-alpine htpasswd -nbB admin 'choose-a-strong-password'
 ```
 
-Replace the contents of `traefik/dynamic/dashboard-users.htpasswd` with the printed line.
-
 > The compose file uses `basicauth.usersfile` (a mounted file) rather than inlining the hash. This avoids Docker Compose `$` interpolation issues — no escaping required.
-*For local development if you want to use the current hash, the password is `choose-good-password`*
+
+> **Note:** `dashboard-users.htpasswd` is gitignored. The `.example` file is committed as a starter only — basic auth is not intended as the long-term auth solution for this stack.
 
 ### 4. Start The Stack
 
@@ -193,15 +202,16 @@ With `CERT_RESOLVER=letsencrypt` set, the dashboard and whoami routers will requ
 
 > The `traefik/certs/` directory and `dynamic/tls.yaml` are still mounted but have no effect when `CERT_RESOLVER=letsencrypt` is active — Let's Encrypt certs take precedence for those routers.
 
-### 4. Hash The Admin Password
+### 4. Set Up The Admin Password File
 
-Same as local dev:
+Copy the example file and replace the dummy hash with a strong password:
 
 ```bash
+cp traefik/dynamic/dashboard-users.htpasswd.example traefik/dynamic/dashboard-users.htpasswd
 docker run --rm httpd:2.4-alpine htpasswd -nbB admin 'choose-a-strong-password'
 ```
 
-Replace the contents of `traefik/dynamic/dashboard-users.htpasswd` with the printed line.
+Replace the contents of `traefik/dynamic/dashboard-users.htpasswd` with the printed line. Do not use the example dummy password in production.
 
 ### 5. Start The Stack
 
