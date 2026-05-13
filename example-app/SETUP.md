@@ -1,0 +1,216 @@
+# URL Shortener - Setup Guide
+
+Follow these steps to get your URL shortener app running.
+
+## Prerequisites
+
+- Docker and Docker Compose installed
+- Your Traefik stack set up (from the `traefik/` directory)
+- A working `.env` file in the `traefik/` directory
+
+## Step 1: Prepare Your Environment Files
+
+### In `traefik/.env`
+
+Make sure you have these variables set (they should already be there from the Traefik setup):
+
+```env
+TRAEFIK_DASHBOARD_HOST=dev.localhost
+ACME_EMAIL=
+CERT_RESOLVER=
+DEBUG=True
+```
+
+### In `example-app/.env`
+
+Copy the example file:
+
+```bash
+cd example-app
+cp .env.example .env
+```
+
+The defaults should work for local development, but feel free to customize:
+
+```env
+DEBUG=True
+DJANGO_SECRET_KEY=your-secret-key-here
+ALLOWED_HOSTS=localhost,127.0.0.1,shortener.dev.localhost
+DB_HOST=db
+DB_PORT=5432
+DB_NAME=shortener
+DB_USER=postgres
+DB_PASSWORD=postgres
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1
+```
+
+## Step 2: Create the Traefik Network (if not already created)
+
+This network is shared between Traefik and your microservices:
+
+```bash
+docker network create proxy
+```
+
+## Step 3: Start the Application
+
+From the `example-app/` directory:
+
+```bash
+docker compose -f docker-compose.yml up -d
+```
+
+This will:
+- Pull PostgreSQL image
+- Build the Django app image
+- Start both services
+- Run database migrations automatically
+- Collect static files
+
+## Step 4: Verify It's Running
+
+Check that containers are running:
+
+```bash
+docker compose -f docker-compose.yml ps
+```
+
+You should see `app` and `db` containers in the RUNNING state.
+
+Check the logs:
+
+```bash
+docker compose -f docker-compose.yml logs -f app
+```
+
+You should see something like:
+```
+Starting application...
+[2026-05-01 12:00:00 +0000] [1] [INFO] Starting gunicorn 21.2.0
+[2026-05-01 12:00:00 +0000] [1] [INFO] Listening at: http://0.0.0.0:8000
+```
+
+## Step 5: Access the Application
+
+Open your browser and go to:
+
+**Local development**: `https://shortener.dev.localhost`
+
+(If you get a certificate warning, that's normal for self-signed certs — click "Advanced" and "Proceed")
+
+You should see the URL Shortener interface with a form to shorten URLs.
+
+## Testing the API
+
+### Create a shortened link
+
+```bash
+curl -X POST https://shortener.dev.localhost/api/links/shorten/ \
+  -H "Content-Type: application/json" \
+  -d '{"original_url": "https://github.com/python/cpython"}'
+```
+
+Response:
+```json
+{
+  "id": 1,
+  "original_url": "https://github.com/python/cpython",
+  "short_code": "aBc12D",
+  "short_url": "https://shortener.dev.localhost/api/s/aBc12D",
+  "clicks": 0,
+  "created_at": "2026-05-01T12:00:00Z"
+}
+```
+
+### Get statistics
+
+```bash
+curl https://shortener.dev.localhost/api/links/stats/
+```
+
+Response:
+```json
+{
+  "total_links": 1,
+  "total_clicks": 0
+}
+```
+
+## Troubleshooting
+
+### Certificate errors on HTTPS
+
+Your local setup uses self-signed certificates from mkcert. If you haven't generated them yet, see the `traefik/` README for mkcert setup instructions.
+
+### Database connection errors
+
+Make sure the `db` container is healthy:
+
+```bash
+docker compose -f docker-compose.yml exec db pg_isready
+```
+
+If not healthy, check logs:
+
+```bash
+docker compose -f docker-compose.yml logs db
+```
+
+### Port 8000 already in use
+
+If port 8000 is in use, update the port mapping in `docker-compose.yml`:
+
+```yaml
+services:
+  app:
+    ports:
+      - "8001:8000"  # Map external 8001 to container 8000
+```
+
+### Static files not loading
+
+Rebuild the image:
+
+```bash
+docker compose -f docker-compose.yml build --no-cache app
+docker compose -f docker-compose.yml up -d app
+```
+
+## Development Tips
+
+### Access the Django shell
+
+```bash
+docker compose -f docker-compose.yml exec app python manage.py shell
+```
+
+### Create a superuser for admin panel
+
+```bash
+docker compose -f docker-compose.yml exec app python manage.py createsuperuser
+```
+
+Then visit: `https://shortener.dev.localhost/admin/`
+
+### Run custom management commands
+
+```bash
+docker compose -f docker-compose.yml exec app python manage.py <command>
+```
+
+### View database directly (with psql)
+
+```bash
+docker compose -f docker-compose.yml exec db psql -U postgres -d shortener
+```
+
+## Next Steps
+
+1. **Add authentication**: Extend the Link model with a user field to track who created each link
+2. **Custom short codes**: Allow users to specify their own short codes (vanity URLs)
+3. **Link expiration**: Add an expiration date to links
+4. **QR codes**: Generate QR codes for shortened links
+5. **Analytics**: Create a dashboard showing top links and traffic patterns
+6. **Rate limiting**: Add API rate limiting to prevent abuse
+
+See the README.md for more details on the app structure and API endpoints.
