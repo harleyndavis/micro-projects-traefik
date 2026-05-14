@@ -28,6 +28,7 @@ services:
       - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.websecure.http.tls=true"
+      - "--entrypoints.websecure.http.tls.certresolver=${CERT_RESOLVER:-}"
 
       # Attach the static configuration tls.yaml file that contains the tls configuration settings
       - "--providers.file.filename=/dynamic/tls.yaml"
@@ -63,7 +64,6 @@ services:
       - "traefik.http.routers.dashboard.entrypoints=websecure"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.tls=true"
-      - "traefik.http.routers.dashboard.tls.certresolver=${CERT_RESOLVER:-}"
 
       # Redirect /dashboard to /dashboard/
       - "traefik.http.routers.dashboard-redirect.rule=(Host(`${TRAEFIK_DASHBOARD_HOST:-localhost}`)) && Path(`/dashboard`)"
@@ -92,7 +92,6 @@ services:
       - "traefik.http.routers.whoami.rule=(Host(`whoami.${TRAEFIK_DASHBOARD_HOST:-localhost}`) || (Host(`${TRAEFIK_DASHBOARD_HOST:-localhost}`)) && PathPrefix(`/whoami`))"
       - "traefik.http.routers.whoami.entrypoints=websecure"
       - "traefik.http.routers.whoami.tls=true"
-      - "traefik.http.routers.whoami.tls.certresolver=${CERT_RESOLVER:-}"
 
 networks:
   proxy:
