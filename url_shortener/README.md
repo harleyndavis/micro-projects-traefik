@@ -6,6 +6,9 @@ A Django-based URL shortener microservice with a clean web UI and REST API. This
 
 - Create shortened URLs with auto-generated 6-character codes
 - Track click statistics for each shortened link
+- QR code generation for every shortened URL (inline after shortening)
+- Standalone QR generator at `/qr/` supporting text/URL, vCard, Wi-Fi, email, and SMS payloads
+- QR scan tracking separate from direct-link clicks via `?src=qr` tagging
 - Clean, responsive web interface
 - REST API for programmatic access
 - PostgreSQL database for persistence
@@ -53,6 +56,7 @@ Migrations and static file collection run automatically on startup. No manual st
 ### 5. Access the app
 
 - **Web UI**: `https://short.dev.localhost` (local) or `https://short.yourdomain.com` (production)
+- **QR generator**: `https://short.dev.localhost/qr/`
 - **API**: `https://short.dev.localhost/api/`
 
 ## API Endpoints
@@ -73,6 +77,7 @@ Response:
   "short_code": "abc123",
   "short_url": "https://short.dev.localhost/api/s/abc123",
   "clicks": 0,
+  "qr_scans": 0,
   "created_at": "2026-05-01T12:00:00Z"
 }
 ```
@@ -93,7 +98,8 @@ Response:
 ```json
 {
   "total_links": 5,
-  "total_clicks": 42
+  "total_clicks": 42,
+  "total_qr_scans": 17
 }
 ```
 
@@ -102,6 +108,9 @@ Response:
 ```bash
 # Redirects to the original URL and increments the click counter
 curl -L https://short.dev.localhost/s/abc123
+
+# Appending ?src=qr increments qr_scans instead of clicks
+curl -L "https://short.dev.localhost/s/abc123?src=qr"
 ```
 
 ## Project Structure
@@ -118,7 +127,8 @@ url_shortener/
 │   ├── views.py            # API views
 │   └── urls.py             # App-level routing
 ├── templates/
-│   └── index.html          # Single-page web UI
+│   ├── index.html          # Shortener UI; auto-generates QR after shortening
+│   └── qr_generator.html  # Standalone QR generator at /qr/
 ├── static/                 # Source static files (served via collectstatic)
 ├── manage.py               # Django CLI
 ├── Dockerfile              # Container image definition
@@ -207,6 +217,5 @@ Ideas for extending this app:
 - Add link expiration dates
 - Create custom short codes (vanity URLs)
 - Build admin dashboard to view all links and stats
-- Add QR code generation for shortened links
 - Implement link password protection
 - Add link preview before redirect
