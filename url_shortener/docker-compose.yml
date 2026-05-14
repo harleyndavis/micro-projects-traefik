@@ -41,7 +41,7 @@ services:
       - proxy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.shortener.rule=(Host(`short.${TRAEFIK_DASHBOARD_HOST:-dev.localhost}`) || PathPrefix(`/api/links`))"
+      - "traefik.http.routers.shortener.rule=Host(`short.${TRAEFIK_DASHBOARD_HOST:-dev.localhost}`)"
       - "traefik.http.routers.shortener.entrypoints=websecure"
       - "traefik.http.routers.shortener.tls=true"
       - "traefik.http.services.shortener.loadbalancer.server.port=8000"
