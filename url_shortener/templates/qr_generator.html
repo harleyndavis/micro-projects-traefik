@@ -3,615 +3,444 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QR Generator</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<title>QR Generator · hrly.sh</title>
+
+<!-- Apply stored theme BEFORE first paint to avoid a flash. -->
+<script>
+  (function () {
+    var v = localStorage.getItem('site-theme');
+    if (v === 'light' || v === 'dark') {
+      document.documentElement.setAttribute('data-theme', v);
+    }
+  })();
+</script>
+
+<link rel="stylesheet" href="{{ ASSETS_URL }}/css/site.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #0a0a0a;
-    --surface: #141414;
-    --border: #2a2a2a;
-    --accent: #e8ff47;
-    --accent2: #47ffe8;
-    --text: #f0f0f0;
-    --muted: #666;
-    --radius: 4px;
-  }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    background-image:
-      repeating-linear-gradient(0deg, transparent, transparent 39px, #1a1a1a 39px, #1a1a1a 40px),
-      repeating-linear-gradient(90deg, transparent, transparent 39px, #1a1a1a 39px, #1a1a1a 40px);
-  }
-
-  header { text-align: center; margin-bottom: 40px; }
-
-  .label-tag {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 4px;
-    color: var(--accent);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-
-  h1 {
-    font-family: 'Space Mono', monospace;
-    font-size: clamp(28px, 5vw, 48px);
-    font-weight: 700;
-    letter-spacing: -1px;
-    line-height: 1;
-    color: var(--text);
-  }
-
-  h1 span { color: var(--accent); }
-
-  .mode-tabs {
-    display: flex;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    overflow: hidden;
-    margin-bottom: 12px;
-    width: 100%;
-    max-width: 520px;
-  }
-
-  .mode-tab {
-    flex: 1;
-    padding: 10px 6px;
-    background: transparent;
-    border: none;
-    border-right: 1px solid var(--border);
-    color: var(--muted);
-    font-family: 'Space Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .mode-tab:last-child { border-right: none; }
-
-  .mode-tab.active {
-    background: var(--accent);
-    color: #0a0a0a;
-    font-weight: 700;
-  }
-
-  .mode-tab:not(.active):hover { color: var(--text); background: #1e1e1e; }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 32px;
-    width: 100%;
-    max-width: 520px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .field label {
-    display: block;
-    font-family: 'Space Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
-
-  textarea, select, input[type=text], input[type=tel], input[type=email], input[type=url] {
-    width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    padding: 10px 14px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  textarea { min-height: 90px; resize: vertical; }
-
-  textarea:focus, select:focus,
-  input[type=text]:focus, input[type=tel]:focus,
-  input[type=email]:focus, input[type=url]:focus {
-    border-color: var(--accent);
-  }
-
-  input::placeholder, textarea::placeholder { color: var(--muted); }
-
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-
-  select option { background: #1a1a1a; }
-
-  .ec-pills { display: flex; gap: 8px; }
-
-  .ec-pill {
-    flex: 1;
-    padding: 8px 4px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--muted);
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    cursor: pointer;
-    text-align: center;
-    transition: all 0.15s;
-    line-height: 1.3;
-  }
-
-  .ec-pill:hover { border-color: var(--accent); color: var(--accent); }
-  .ec-pill.active { background: var(--accent); border-color: var(--accent); color: #0a0a0a; font-weight: 700; }
-  .ec-pill small { display: block; font-size: 9px; opacity: 0.7; margin-top: 2px; }
-
-  .section-divider {
-    font-family: 'Space Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--muted);
-    border-top: 1px solid var(--border);
-    padding-top: 16px;
-    margin-top: 4px;
-  }
-
-  .generate-btn {
-    width: 100%;
-    padding: 14px;
-    background: var(--accent);
-    border: none;
-    border-radius: var(--radius);
-    color: #0a0a0a;
-    font-family: 'Space Mono', monospace;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .generate-btn:hover { background: #f5ff6e; transform: translateY(-1px); }
-  .generate-btn:active { transform: translateY(0); }
-
-  .output {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-    margin-top: 32px;
-    width: 100%;
-    max-width: 520px;
-    animation: fadeUp 0.35s ease forwards;
-  }
-
-  .output.visible { display: flex; }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  .qr-frame {
-    position: relative;
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 0 1px var(--border), 0 0 60px rgba(232,255,71,0.07);
-  }
-
-  .qr-frame::before, .qr-frame::after {
-    content: '';
-    position: absolute;
-    width: 20px; height: 20px;
-    border-color: var(--accent);
-    border-style: solid;
-  }
-  .qr-frame::before { top: -6px; left: -6px; border-width: 2px 0 0 2px; }
-  .qr-frame::after  { bottom: -6px; right: -6px; border-width: 0 2px 2px 0; }
-
-  #qrcode canvas, #qrcode img { display: block; }
-
-  .meta {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    text-align: center;
-    letter-spacing: 1px;
-  }
-
-  .meta span { color: var(--accent2); }
-
-  .actions { display: flex; gap: 12px; width: 100%; }
-
-  .dl-btn {
-    flex: 1;
-    padding: 11px;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text);
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  .dl-btn:hover { border-color: var(--accent2); color: var(--accent2); }
-
-  .size-slider-wrap { display: flex; align-items: center; gap: 12px; }
-
-  input[type=range] {
-    flex: 1;
-    -webkit-appearance: none;
-    background: var(--border);
-    height: 3px;
-    border-radius: 2px;
-    outline: none;
-  }
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 16px; height: 16px;
-    background: var(--accent);
-    border-radius: 50%;
-    cursor: pointer;
-  }
-
-  .size-val {
-    font-family: 'Space Mono', monospace;
-    font-size: 12px;
-    color: var(--accent);
-    min-width: 48px;
-    text-align: right;
-  }
-
-  .panel { display: none; flex-direction: column; gap: 16px; }
-  .panel.active { display: flex; }
-</style>
 </head>
-<body>
+<body class="with-grid">
 
-<header>
-  <p class="label-tag">// utility</p>
-  <h1>QR<span>_</span>GEN</h1>
+<!-- ═══════════════ Shared header ═══════════════ -->
+<header class="site-header">
+    <a class="brand" href="/">
+        <span class="dot"></span>
+        <b>hrly</b><span class="tld">.sh</span>
+    </a>
+
+    <nav class="nav">
+        <a href="/">Home</a>
+        <a href="/s/">Shortener</a>
+        <a href="/qr/" class="is-active">QR Gen</a>
+    </nav>
+
+    <div class="header-right">
+        <div class="theme-toggle" role="group" aria-label="Theme">
+            <button type="button" data-theme="light" title="Light" aria-label="Light theme">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.2"/>
+                    <g stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
+                        <line x1="8" y1="1.5" x2="8" y2="3"/>
+                        <line x1="8" y1="13" x2="8" y2="14.5"/>
+                        <line x1="1.5" y1="8" x2="3" y2="8"/>
+                        <line x1="13" y1="8" x2="14.5" y2="8"/>
+                        <line x1="3.4" y1="3.4" x2="4.5" y2="4.5"/>
+                        <line x1="11.5" y1="11.5" x2="12.6" y2="12.6"/>
+                        <line x1="3.4" y1="12.6" x2="4.5" y2="11.5"/>
+                        <line x1="11.5" y1="4.5" x2="12.6" y2="3.4"/>
+                    </g>
+                </svg>
+            </button>
+            <button type="button" data-theme="system" title="System" aria-label="System theme">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/>
+                    <path d="M8 2 a6 6 0 0 1 0 12 z" fill="currentColor"/>
+                </svg>
+            </button>
+            <button type="button" data-theme="dark" title="Dark" aria-label="Dark theme">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z"
+                          stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+    </div>
 </header>
 
-<div class="mode-tabs">
-  <button class="mode-tab active" data-mode="text">Text / URL</button>
-  <button class="mode-tab" data-mode="contact">Contact</button>
-  <button class="mode-tab" data-mode="wifi">Wi-Fi</button>
-  <button class="mode-tab" data-mode="email">Email</button>
-  <button class="mode-tab" data-mode="sms">SMS</button>
-</div>
+<!-- ═══════════════ Main ═══════════════ -->
+<main class="main">
+    <div class="content narrow">
 
-<div class="card">
+        <!-- ── Hero ─────────────────────────────── -->
+        <header>
+            <p class="eyebrow">// utility</p>
+            <h1 class="h1 small">QR<span class="accent">_</span>GEN</h1>
+            <p class="tagline">Encode anything as a scannable QR.</p>
+        </header>
 
-  <!-- TEXT panel -->
-  <div class="panel active" id="panel-text">
-    <div class="field">
-      <label>Input — URL, text, or any data</label>
-      <textarea id="inputText" placeholder="https://example.com"></textarea>
-    </div>
-  </div>
+        <!-- ── Mode tabs ───────────────────────── -->
+        <div class="tabs" role="tablist">
+            <button type="button" class="is-active" data-mode="text">Text / URL</button>
+            <button type="button" data-mode="contact">Contact</button>
+            <button type="button" data-mode="wifi">Wi-Fi</button>
+            <button type="button" data-mode="email">Email</button>
+            <button type="button" data-mode="sms">SMS</button>
+        </div>
 
-  <!-- CONTACT panel -->
-  <div class="panel" id="panel-contact">
-    <div class="row">
-      <div class="field">
-        <label>First Name *</label>
-        <input type="text" id="c-first" placeholder="Jane">
-      </div>
-      <div class="field">
-        <label>Last Name</label>
-        <input type="text" id="c-last" placeholder="Smith">
-      </div>
-    </div>
-    <div class="field">
-      <label>Organization</label>
-      <input type="text" id="c-org" placeholder="Acme Corp">
-    </div>
-    <div class="field">
-      <label>Job Title</label>
-      <input type="text" id="c-title" placeholder="Product Manager">
-    </div>
-    <div class="row">
-      <div class="field">
-        <label>Phone</label>
-        <input type="tel" id="c-phone" placeholder="+1 555 000 0000">
-      </div>
-      <div class="field">
-        <label>Mobile</label>
-        <input type="tel" id="c-mobile" placeholder="+1 555 000 0001">
-      </div>
-    </div>
-    <div class="field">
-      <label>Email</label>
-      <input type="email" id="c-email" placeholder="jane@example.com">
-    </div>
-    <div class="field">
-      <label>Website</label>
-      <input type="url" id="c-website" placeholder="https://example.com">
-    </div>
-    <div class="field">
-      <label>Address</label>
-      <input type="text" id="c-address" placeholder="123 Main St, Spokane, WA 99201">
-    </div>
-  </div>
+        <!-- ── Form card ───────────────────────── -->
+        <div class="card card-stack">
 
-  <!-- WIFI panel -->
-  <div class="panel" id="panel-wifi">
-    <div class="field">
-      <label>Network Name (SSID) *</label>
-      <input type="text" id="w-ssid" placeholder="MyNetwork">
-    </div>
-    <div class="field">
-      <label>Password</label>
-      <input type="text" id="w-pass" placeholder="password123">
-    </div>
-    <div class="field">
-      <label>Security Type</label>
-      <select id="w-security">
-        <option value="WPA">WPA / WPA2</option>
-        <option value="WEP">WEP</option>
-        <option value="nopass">None (open network)</option>
-      </select>
-    </div>
-  </div>
+            <!-- TEXT panel -->
+            <div class="panel is-active" id="panel-text">
+                <div>
+                    <label class="field-label" for="inputText">Input — URL, text, or any data</label>
+                    <textarea id="inputText" class="input" placeholder="https://example.com" rows="3"></textarea>
+                </div>
+            </div>
 
-  <!-- EMAIL panel -->
-  <div class="panel" id="panel-email">
-    <div class="field">
-      <label>To *</label>
-      <input type="email" id="e-to" placeholder="recipient@example.com">
-    </div>
-    <div class="field">
-      <label>Subject</label>
-      <input type="text" id="e-subject" placeholder="Hello!">
-    </div>
-    <div class="field">
-      <label>Body</label>
-      <textarea id="e-body" placeholder="Message body..."></textarea>
-    </div>
-  </div>
+            <!-- CONTACT panel (vCard) -->
+            <div class="panel" id="panel-contact">
+                <div class="row">
+                    <div>
+                        <label class="field-label" for="c-first">First Name *</label>
+                        <input type="text" id="c-first" class="input" placeholder="Jane">
+                    </div>
+                    <div>
+                        <label class="field-label" for="c-last">Last Name</label>
+                        <input type="text" id="c-last" class="input" placeholder="Smith">
+                    </div>
+                </div>
+                <div>
+                    <label class="field-label" for="c-org">Organization</label>
+                    <input type="text" id="c-org" class="input" placeholder="Acme Corp">
+                </div>
+                <div>
+                    <label class="field-label" for="c-title">Job Title</label>
+                    <input type="text" id="c-title" class="input" placeholder="Product Manager">
+                </div>
+                <div class="row">
+                    <div>
+                        <label class="field-label" for="c-phone">Phone</label>
+                        <input type="tel" id="c-phone" class="input" placeholder="+1 555 000 0000">
+                    </div>
+                    <div>
+                        <label class="field-label" for="c-mobile">Mobile</label>
+                        <input type="tel" id="c-mobile" class="input" placeholder="+1 555 000 0001">
+                    </div>
+                </div>
+                <div>
+                    <label class="field-label" for="c-email">Email</label>
+                    <input type="email" id="c-email" class="input" placeholder="jane@example.com">
+                </div>
+                <div>
+                    <label class="field-label" for="c-website">Website</label>
+                    <input type="url" id="c-website" class="input" placeholder="https://example.com">
+                </div>
+                <div>
+                    <label class="field-label" for="c-address">Address</label>
+                    <input type="text" id="c-address" class="input" placeholder="123 Main St, Spokane, WA 99201">
+                </div>
+            </div>
 
-  <!-- SMS panel -->
-  <div class="panel" id="panel-sms">
-    <div class="field">
-      <label>Phone Number *</label>
-      <input type="tel" id="s-phone" placeholder="+1 555 000 0000">
+            <!-- WIFI panel -->
+            <div class="panel" id="panel-wifi">
+                <div>
+                    <label class="field-label" for="w-ssid">Network Name (SSID) *</label>
+                    <input type="text" id="w-ssid" class="input" placeholder="MyNetwork">
+                </div>
+                <div>
+                    <label class="field-label" for="w-pass">Password</label>
+                    <input type="text" id="w-pass" class="input" placeholder="password123">
+                </div>
+                <div>
+                    <label class="field-label" for="w-security">Security Type</label>
+                    <select id="w-security" class="input">
+                        <option value="WPA">WPA / WPA2</option>
+                        <option value="WEP">WEP</option>
+                        <option value="nopass">None (open network)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- EMAIL panel -->
+            <div class="panel" id="panel-email">
+                <div>
+                    <label class="field-label" for="e-to">To *</label>
+                    <input type="email" id="e-to" class="input" placeholder="recipient@example.com">
+                </div>
+                <div>
+                    <label class="field-label" for="e-subject">Subject</label>
+                    <input type="text" id="e-subject" class="input" placeholder="Hello!">
+                </div>
+                <div>
+                    <label class="field-label" for="e-body">Body</label>
+                    <textarea id="e-body" class="input" rows="3" placeholder="Message body..."></textarea>
+                </div>
+            </div>
+
+            <!-- SMS panel -->
+            <div class="panel" id="panel-sms">
+                <div>
+                    <label class="field-label" for="s-phone">Phone Number *</label>
+                    <input type="tel" id="s-phone" class="input" placeholder="+1 555 000 0000">
+                </div>
+                <div>
+                    <label class="field-label" for="s-msg">Message</label>
+                    <textarea id="s-msg" class="input" rows="3" placeholder="Your message..."></textarea>
+                </div>
+            </div>
+
+            <!-- Shared settings -->
+            <h2 class="section-head" style="margin-top:4px; margin-bottom:4px;">Settings</h2>
+
+            <div class="row">
+                <div>
+                    <label class="field-label" for="sizeSlider">Size</label>
+                    <div class="slider-wrap">
+                        <input type="range" class="slider" id="sizeSlider"
+                               min="128" max="512" step="32" value="256">
+                        <span class="slider-val" id="sizeVal">256px</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="field-label" for="colorMode">Color</label>
+                    <select id="colorMode" class="input">
+                        <option value="bw">Black / White</option>
+                        <option value="dark">Dark / Accent</option>
+                        <option value="inv">White / Black</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="field-label">Error Correction</label>
+                <div class="ec-pills">
+                    <button type="button" class="ec-pill is-active" data-ec="L">L<small>7%</small></button>
+                    <button type="button" class="ec-pill" data-ec="M">M<small>15%</small></button>
+                    <button type="button" class="ec-pill" data-ec="Q">Q<small>25%</small></button>
+                    <button type="button" class="ec-pill" data-ec="H">H<small>30%</small></button>
+                </div>
+            </div>
+
+            <button type="button" class="btn" onclick="generate()">Generate QR Code</button>
+        </div>
+
+        <!-- ── Output (hidden until generate clicked) ─────── -->
+        <div class="card result" id="output" hidden>
+            <div class="qr-row">
+                <div class="qr-frame">
+                    <div id="qrcode"></div>
+                </div>
+                <div class="qr-row-meta">
+                    <span class="pill"><span class="dot"></span><span id="metaText">TYPE: TEXT · EC: L · 256×256</span></span>
+                    <div class="qr-row-actions">
+                        <button type="button" class="btn ghost" onclick="downloadQR()">⬇ Download PNG</button>
+                        <button type="button" class="btn ghost" onclick="copyQR()">⎘ Copy Image</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
-    <div class="field">
-      <label>Message</label>
-      <textarea id="s-msg" placeholder="Your message..."></textarea>
-    </div>
-  </div>
+</main>
 
-  <!-- Shared settings -->
-  <div class="section-divider">Settings</div>
+<!-- ═══════════════ Footer ═══════════════ -->
+<footer class="site-footer">
+    <span>// hrly.sh — <span id="year">2026</span></span>
+    <span>BUILT WITH CAFFEINE &amp; CURIOSITY</span>
+</footer>
 
-  <div class="row">
-    <div class="field">
-      <label>Size</label>
-      <div class="size-slider-wrap">
-        <input type="range" id="sizeSlider" min="128" max="512" step="32" value="256">
-        <span class="size-val" id="sizeVal">256px</span>
-      </div>
-    </div>
-    <div class="field">
-      <label>Color</label>
-      <select id="colorMode">
-        <option value="bw">Black / White</option>
-        <option value="dark">Dark / Lime</option>
-        <option value="teal">Dark / Teal</option>
-        <option value="inv">White / Black</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Error Correction</label>
-    <div class="ec-pills">
-      <button class="ec-pill active" data-ec="L">L<small>7%</small></button>
-      <button class="ec-pill" data-ec="M">M<small>15%</small></button>
-      <button class="ec-pill" data-ec="Q">Q<small>25%</small></button>
-      <button class="ec-pill" data-ec="H">H<small>30%</small></button>
-    </div>
-  </div>
-
-  <button class="generate-btn" onclick="generate()">GENERATE QR CODE</button>
-</div>
-
-<div class="output" id="output">
-  <div class="qr-frame">
-    <div id="qrcode"></div>
-  </div>
-  <p class="meta" id="metaText"></p>
-  <div class="actions">
-    <button class="dl-btn" onclick="downloadQR()">⬇ Download PNG</button>
-    <button class="dl-btn" onclick="copyQR()">⎘ Copy Image</button>
-  </div>
-</div>
-
+<!-- ═══════════════ Theme toggle ═══════════════ -->
 <script>
-  // Pre-fill from ?url= when linked from the shortener
-  const _urlParam = new URLSearchParams(window.location.search).get('url');
-  if (_urlParam) {
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('inputText').value = _urlParam;
-      setTimeout(generate, 50);
-    });
-  }
-
-  let currentMode = 'text';
-
-  document.querySelectorAll('.mode-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      tab.classList.add('active');
-      currentMode = tab.dataset.mode;
-      document.getElementById('panel-' + currentMode).classList.add('active');
-      document.getElementById('output').classList.remove('visible');
-    });
-  });
-
-  const slider = document.getElementById('sizeSlider');
-  const sizeVal = document.getElementById('sizeVal');
-  slider.addEventListener('input', () => sizeVal.textContent = slider.value + 'px');
-
-  let selectedEC = 'L';
-  document.querySelectorAll('.ec-pill').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.ec-pill').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selectedEC = btn.dataset.ec;
-    });
-  });
-
-  const colorMap = {
-    bw:   { dark: '#000000', light: '#ffffff' },
-    dark: { dark: '#0a0a0a', light: '#e8ff47' },
-    teal: { dark: '#0a0a0a', light: '#47ffe8' },
-    inv:  { dark: '#ffffff', light: '#000000' },
-  };
-
-  const ecMap = {
-    L: QRCode.CorrectLevel.L,
-    M: QRCode.CorrectLevel.M,
-    Q: QRCode.CorrectLevel.Q,
-    H: QRCode.CorrectLevel.H,
-  };
-
-  function v(id) { return document.getElementById(id).value.trim(); }
-
-  function buildPayload() {
-    switch (currentMode) {
-      case 'text':
-        return v('inputText') || null;
-
-      case 'contact': {
-        const first = v('c-first'), last = v('c-last');
-        if (!first && !last) return null;
-        let vc = 'BEGIN:VCARD\nVERSION:3.0\n';
-        vc += `N:${last};${first};;;\n`;
-        vc += `FN:${[first, last].filter(Boolean).join(' ')}\n`;
-        if (v('c-org'))     vc += `ORG:${v('c-org')}\n`;
-        if (v('c-title'))   vc += `TITLE:${v('c-title')}\n`;
-        if (v('c-phone'))   vc += `TEL;TYPE=WORK,VOICE:${v('c-phone')}\n`;
-        if (v('c-mobile'))  vc += `TEL;TYPE=CELL:${v('c-mobile')}\n`;
-        if (v('c-email'))   vc += `EMAIL:${v('c-email')}\n`;
-        if (v('c-website')) vc += `URL:${v('c-website')}\n`;
-        if (v('c-address')) vc += `ADR;TYPE=WORK:;;${v('c-address')};;;;\n`;
-        vc += 'END:VCARD';
-        return vc;
-      }
-
-      case 'wifi': {
-        const ssid = v('w-ssid');
-        if (!ssid) return null;
-        return `WIFI:T:${v('w-security')};S:${ssid};P:${v('w-pass')};;`;
-      }
-
-      case 'email': {
-        const to = v('e-to');
-        if (!to) return null;
-        const sub = encodeURIComponent(v('e-subject'));
-        const body = encodeURIComponent(v('e-body'));
-        return `mailto:${to}?subject=${sub}&body=${body}`;
-      }
-
-      case 'sms': {
-        const phone = v('s-phone');
-        if (!phone) return null;
-        return `sms:${phone}?body=${encodeURIComponent(v('s-msg'))}`;
-      }
+  (function () {
+    var KEY = 'site-theme';
+    function apply(v) {
+      if (v === 'light' || v === 'dark') document.documentElement.setAttribute('data-theme', v);
+      else document.documentElement.removeAttribute('data-theme');
     }
-    return null;
-  }
-
-  function generate() {
-    const payload = buildPayload();
-    if (!payload) {
-      alert('Please fill in the required fields (marked *).');
-      return;
+    function current() { return localStorage.getItem(KEY) || 'system'; }
+    function paint() {
+      var v = current();
+      document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+        b.classList.toggle('is-active', b.dataset.theme === v);
+      });
     }
-
-    const size = parseInt(slider.value);
-    const colors = colorMap[document.getElementById('colorMode').value];
-    const container = document.getElementById('qrcode');
-    container.innerHTML = '';
-
-    new QRCode(container, {
-      text: payload,
-      width: size,
-      height: size,
-      colorDark: colors.dark,
-      colorLight: colors.light,
-      correctLevel: ecMap[selectedEC],
+    document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var v = b.dataset.theme;
+        if (v === 'system') localStorage.removeItem(KEY);
+        else localStorage.setItem(KEY, v);
+        apply(v); paint();
+      });
     });
-
-    const labels = { text:'TEXT', contact:'vCARD 3.0', wifi:'WI-FI', email:'EMAIL', sms:'SMS' };
-    document.getElementById('metaText').innerHTML =
-      `Type: <span>${labels[currentMode]}</span> &nbsp;·&nbsp; EC: <span>${selectedEC}</span> &nbsp;·&nbsp; Size: <span>${size}×${size}</span>`;
-
-    const out = document.getElementById('output');
-    out.classList.remove('visible');
-    void out.offsetWidth;
-    out.classList.add('visible');
-  }
-
-  function getCanvas() { return document.querySelector('#qrcode canvas'); }
-
-  function downloadQR() {
-    const canvas = getCanvas();
-    if (!canvas) return;
-    const a = document.createElement('a');
-    a.download = 'qrcode.png';
-    a.href = canvas.toDataURL('image/png');
-    a.click();
-  }
-
-  async function copyQR() {
-    const canvas = getCanvas();
-    if (!canvas) return;
-    canvas.toBlob(async blob => {
-      try {
-        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-        const btn = document.querySelectorAll('.dl-btn')[1];
-        const orig = btn.textContent;
-        btn.textContent = '✓ Copied!';
-        setTimeout(() => btn.textContent = orig, 1500);
-      } catch(e) {
-        alert('Copy not supported in this browser — use Download instead.');
-      }
-    });
-  }
+    paint();
+    document.getElementById('year').textContent = new Date().getFullYear();
+  })();
 </script>
+
+<!-- ═══════════════ QR Generator behavior (preserved from your original) ═══════════════ -->
+<script>
+    // Pre-fill from ?url= when linked from the shortener.
+    const _urlParam = new URLSearchParams(window.location.search).get('url');
+    if (_urlParam) {
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('inputText').value = _urlParam;
+            setTimeout(generate, 50);
+        });
+    }
+
+    let currentMode = 'text';
+
+    document.querySelectorAll('.tabs button').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.tabs button').forEach(t => t.classList.remove('is-active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('is-active'));
+            tab.classList.add('is-active');
+            currentMode = tab.dataset.mode;
+            document.getElementById('panel-' + currentMode).classList.add('is-active');
+            document.getElementById('output').hidden = true;
+        });
+    });
+
+    const slider = document.getElementById('sizeSlider');
+    const sizeVal = document.getElementById('sizeVal');
+    slider.addEventListener('input', () => sizeVal.textContent = slider.value + 'px');
+
+    let selectedEC = 'L';
+    document.querySelectorAll('.ec-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.ec-pill').forEach(b => b.classList.remove('is-active'));
+            btn.classList.add('is-active');
+            selectedEC = btn.dataset.ec;
+        });
+    });
+
+    // Pull the accent value from a CSS var so the "Dark / Accent" preset
+    // matches whatever color the site is themed with.
+    function cssVar(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+    function colorMap() {
+        return {
+            bw:   { dark: '#000000', light: '#ffffff' },
+            dark: { dark: '#0a0a0a', light: cssVar('--accent') || '#16a34a' },
+            inv:  { dark: '#ffffff', light: '#000000' },
+        };
+    }
+
+    const ecMap = {
+        L: QRCode.CorrectLevel.L,
+        M: QRCode.CorrectLevel.M,
+        Q: QRCode.CorrectLevel.Q,
+        H: QRCode.CorrectLevel.H,
+    };
+
+    function v(id) { return document.getElementById(id).value.trim(); }
+
+    function buildPayload() {
+        switch (currentMode) {
+            case 'text':
+                return v('inputText') || null;
+
+            case 'contact': {
+                const first = v('c-first'), last = v('c-last');
+                if (!first && !last) return null;
+                let vc = 'BEGIN:VCARD\nVERSION:3.0\n';
+                vc += `N:${last};${first};;;\n`;
+                vc += `FN:${[first, last].filter(Boolean).join(' ')}\n`;
+                if (v('c-org'))     vc += `ORG:${v('c-org')}\n`;
+                if (v('c-title'))   vc += `TITLE:${v('c-title')}\n`;
+                if (v('c-phone'))   vc += `TEL;TYPE=WORK,VOICE:${v('c-phone')}\n`;
+                if (v('c-mobile'))  vc += `TEL;TYPE=CELL:${v('c-mobile')}\n`;
+                if (v('c-email'))   vc += `EMAIL:${v('c-email')}\n`;
+                if (v('c-website')) vc += `URL:${v('c-website')}\n`;
+                if (v('c-address')) vc += `ADR;TYPE=WORK:;;${v('c-address')};;;;\n`;
+                vc += 'END:VCARD';
+                return vc;
+            }
+
+            case 'wifi': {
+                const ssid = v('w-ssid');
+                if (!ssid) return null;
+                return `WIFI:T:${v('w-security')};S:${ssid};P:${v('w-pass')};;`;
+            }
+
+            case 'email': {
+                const to = v('e-to');
+                if (!to) return null;
+                const sub = encodeURIComponent(v('e-subject'));
+                const body = encodeURIComponent(v('e-body'));
+                return `mailto:${to}?subject=${sub}&body=${body}`;
+            }
+
+            case 'sms': {
+                const phone = v('s-phone');
+                if (!phone) return null;
+                return `sms:${phone}?body=${encodeURIComponent(v('s-msg'))}`;
+            }
+        }
+        return null;
+    }
+
+    function generate() {
+        const payload = buildPayload();
+        if (!payload) {
+            alert('Please fill in the required fields (marked *).');
+            return;
+        }
+
+        const size = parseInt(slider.value);
+        const colors = colorMap()[document.getElementById('colorMode').value];
+        const container = document.getElementById('qrcode');
+        container.innerHTML = '';
+
+        new QRCode(container, {
+            text: payload,
+            width: size,
+            height: size,
+            colorDark: colors.dark,
+            colorLight: colors.light,
+            correctLevel: ecMap[selectedEC],
+        });
+
+        const labels = { text:'TEXT', contact:'vCARD 3.0', wifi:'WI-FI', email:'EMAIL', sms:'SMS' };
+        document.getElementById('metaText').textContent =
+            `TYPE: ${labels[currentMode]} · EC: ${selectedEC} · ${size}×${size}`;
+
+        const out = document.getElementById('output');
+        out.hidden = false;
+        // Re-run the fadeUp animation each time:
+        out.style.animation = 'none';
+        void out.offsetWidth;
+        out.style.animation = '';
+    }
+
+    function getCanvas() { return document.querySelector('#qrcode canvas'); }
+
+    function downloadQR() {
+        const canvas = getCanvas();
+        if (!canvas) return;
+        const a = document.createElement('a');
+        a.download = 'qrcode.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+    }
+
+    async function copyQR() {
+        const canvas = getCanvas();
+        if (!canvas) return;
+        canvas.toBlob(async blob => {
+            try {
+                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                const btn = event.currentTarget;
+                const orig = btn.textContent;
+                btn.textContent = '✓ Copied!';
+                setTimeout(() => btn.textContent = orig, 1500);
+            } catch (e) {
+                alert('Copy not supported in this browser — use Download instead.');
+            }
+        });
+    }
+</script>
+
 </body>
 </html>

@@ -1,0 +1,17 @@
+services:
+  static_site:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./html:/usr/share/nginx/html:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.static_site.rule=Host(`www.${TRAEFIK_DASHBOARD_HOST}`)"
+      - "traefik.http.routers.static_site.entrypoints=websecure"
+      - "traefik.http.routers.static_site.tls.certresolver=${CERT_RESOLVER:-}"
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #f1f5f9;
+    }
+
+    .card {
+      text-align: center;
+      padding: 3rem 4rem;
+      border: 1px solid #1e293b;
+      border-radius: 1rem;
+      background: #1e293b;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      margin-top: 0.75rem;
+      color: #94a3b8;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Hello, world.</h1>
+    <p>Static site served by nginx via Traefik.</p>
+  </div>
+</body>
+</html>

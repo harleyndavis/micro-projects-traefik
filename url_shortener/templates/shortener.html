@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener · hrly.sh</title>
+
+    <!-- Apply stored theme BEFORE first paint to avoid a flash. -->
+    <script>
+      (function () {
+        var v = localStorage.getItem('site-theme');
+        if (v === 'light' || v === 'dark') {
+          document.documentElement.setAttribute('data-theme', v);
+        }
+      })();
+    </script>
+
+    <link rel="stylesheet" href="{{ ASSETS_URL }}/css/site.css">
+</head>
+<body class="with-grid">
+
+    <!-- ═══════════════ Shared header ═══════════════ -->
+    <header class="site-header">
+        <a class="brand" href="/">
+            <span class="dot"></span>
+            <b>hrly</b><span class="tld">.sh</span>
+        </a>
+
+        <nav class="nav">
+            <!-- Adjust hrefs for your subdomain layout. -->
+            <a href="/">Home</a>
+            <a href="/" class="is-active">Shortener</a>
+            <a href="/qr/">QR Gen</a>
+        </nav>
+
+        <div class="header-right">
+            <div class="theme-toggle" role="group" aria-label="Theme">
+                <button type="button" data-theme="light" title="Light" aria-label="Light theme">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.2"/>
+                        <g stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
+                            <line x1="8" y1="1.5" x2="8" y2="3"/>
+                            <line x1="8" y1="13" x2="8" y2="14.5"/>
+                            <line x1="1.5" y1="8" x2="3" y2="8"/>
+                            <line x1="13" y1="8" x2="14.5" y2="8"/>
+                            <line x1="3.4" y1="3.4" x2="4.5" y2="4.5"/>
+                            <line x1="11.5" y1="11.5" x2="12.6" y2="12.6"/>
+                            <line x1="3.4" y1="12.6" x2="4.5" y2="11.5"/>
+                            <line x1="11.5" y1="4.5" x2="12.6" y2="3.4"/>
+                        </g>
+                    </svg>
+                </button>
+                <button type="button" data-theme="system" title="System" aria-label="System theme">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/>
+                        <path d="M8 2 a6 6 0 0 1 0 12 z" fill="currentColor"/>
+                    </svg>
+                </button>
+                <button type="button" data-theme="dark" title="Dark" aria-label="Dark theme">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z"
+                              stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ═══════════════ Main ═══════════════ -->
+    <main class="main">
+        <div class="content narrow">
+
+            <!-- ── Hero ─────────────────────────────── -->
+            <header>
+                <p class="eyebrow">// utility</p>
+                <h1 class="h1 small">URL<span class="accent">_</span>SHORT</h1>
+                <p class="tagline">Shorten long URLs and grab a QR in one go.</p>
+            </header>
+
+            <!-- ── Input form ───────────────────────── -->
+            <form id="shortenForm" class="card card-stack" novalidate>
+                <div>
+                    <label class="field-label" for="urlInput">Original URL</label>
+                    <input
+                        type="url"
+                        id="urlInput"
+                        class="input"
+                        placeholder="https://example.com/very/long/url"
+                        autocomplete="off"
+                        required>
+                </div>
+                <button type="submit" class="btn">Shorten URL</button>
+                <div class="loading" id="loading">
+                    <span class="spinner"></span>Shortening...
+                </div>
+                <div class="error" id="error"></div>
+            </form>
+
+            <!-- ── Result (hidden until submit) ────── -->
+            <div class="card result" id="result" hidden>
+                <div>
+                    <label class="field-label" for="shortUrl">Shortened</label>
+                    <div class="result-row">
+                        <input type="text" id="shortUrl" class="short-link" readonly>
+                        <button type="button" class="btn ghost auto-width" id="copyBtn">Copy</button>
+                    </div>
+                </div>
+
+                <div class="qr-row" style="padding-top: 14px; border-top: 1px solid var(--border);">
+                    <div class="qr-frame">
+                        <div id="qrDisplay"></div>
+                    </div>
+                    <div class="qr-row-meta">
+                        <span class="pill"><span class="dot"></span><span id="qrMeta">QR · 180×180 · M</span></span>
+                        <div class="qr-row-actions">
+                            <button type="button" class="btn ghost" id="qrDownload">⬇ Download PNG</button>
+                            <a id="qrFullLink" href="/qr/" target="_blank" class="btn ghost">↗ Open in QR_GEN</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Stats ───────────────────────────── -->
+            <div>
+                <div class="card">
+                    <h2 class="section-head">
+                        Stats <span class="count">Lifetime</span>
+                    </h2>
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="n" id="totalLinks">0</div>
+                            <div class="l">Total Links</div>
+                        </div>
+                        <div class="stat">
+                            <div class="n" id="totalClicks">0</div>
+                            <div class="l">Total Clicks</div>
+                        </div>
+                        <div class="stat">
+                            <div class="n" id="totalQrScans">0</div>
+                            <div class="l">QR Scans</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ═══════════════ Footer ═══════════════ -->
+    <footer class="site-footer">
+        <span>// hrly.sh — <span id="year">2026</span></span>
+        <span>BUILT WITH CAFFEINE &amp; CURIOSITY</span>
+    </footer>
+
+    <!-- qrcodejs (kept from your existing template). -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <!-- ═══════════════ Theme toggle ═══════════════ -->
+    <script>
+      (function () {
+        var KEY = 'site-theme';
+        function apply(v) {
+          if (v === 'light' || v === 'dark') document.documentElement.setAttribute('data-theme', v);
+          else document.documentElement.removeAttribute('data-theme');
+        }
+        function current() { return localStorage.getItem(KEY) || 'system'; }
+        function paint() {
+          var v = current();
+          document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+            b.classList.toggle('is-active', b.dataset.theme === v);
+          });
+        }
+        document.querySelectorAll('.theme-toggle button').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var v = b.dataset.theme;
+            if (v === 'system') localStorage.removeItem(KEY);
+            else localStorage.setItem(KEY, v);
+            apply(v); paint();
+          });
+        });
+        paint();
+        document.getElementById('year').textContent = new Date().getFullYear();
+      })();
+    </script>
+
+    <!-- ═══════════════ Shortener behavior (preserved from your original) ═══════════════ -->
+    <script>
+        const API_BASE = '/api';
+        let qrInstance = null;
+
+        const form = document.getElementById('shortenForm');
+        const urlInput = document.getElementById('urlInput');
+        const errorDiv = document.getElementById('error');
+        const loadingDiv = document.getElementById('loading');
+        const resultDiv = document.getElementById('result');
+        const shortUrlInput = document.getElementById('shortUrl');
+        const qrMetaEl = document.getElementById('qrMeta');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorDiv.classList.remove('is-active');
+            loadingDiv.classList.add('is-active');
+
+            try {
+                const response = await fetch(`${API_BASE}/links/shorten/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: JSON.stringify({ original_url: urlInput.value }),
+                });
+
+                if (!response.ok) throw new Error('Failed to shorten URL');
+
+                const data = await response.json();
+                shortUrlInput.value = data.short_url;
+                resultDiv.hidden = false;
+                // Re-run the fadeUp animation each time:
+                resultDiv.style.animation = 'none';
+                void resultDiv.offsetWidth;
+                resultDiv.style.animation = '';
+
+                generateQRCode(data.short_url);
+                urlInput.value = '';
+                updateStats();
+            } catch (err) {
+                errorDiv.textContent = 'Error: ' + err.message;
+                errorDiv.classList.add('is-active');
+            } finally {
+                loadingDiv.classList.remove('is-active');
+            }
+        });
+
+        function generateQRCode(shortUrl) {
+            const trackedUrl = shortUrl + '?src=qr';
+            const container = document.getElementById('qrDisplay');
+            container.innerHTML = '';
+            qrInstance = new QRCode(container, {
+                text: trackedUrl,
+                width: 180,
+                height: 180,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M,
+            });
+            if (qrMetaEl) qrMetaEl.textContent = 'QR · 180×180 · M';
+            document.getElementById('qrFullLink').href =
+                '/qr/?url=' + encodeURIComponent(trackedUrl);
+        }
+
+        document.getElementById('qrDownload').addEventListener('click', () => {
+            const canvas = document.querySelector('#qrDisplay canvas');
+            if (!canvas) return;
+            const a = document.createElement('a');
+            a.download = 'qrcode.png';
+            a.href = canvas.toDataURL('image/png');
+            a.click();
+        });
+
+        document.getElementById('copyBtn').addEventListener('click', (e) => {
+            shortUrlInput.select();
+            document.execCommand('copy');
+            const btn = e.currentTarget;
+            const original = btn.textContent;
+            btn.textContent = 'Copied!';
+            setTimeout(() => { btn.textContent = original; }, 1500);
+        });
+
+        async function updateStats() {
+            try {
+                const response = await fetch(`${API_BASE}/links/stats/`);
+                const data = await response.json();
+                document.getElementById('totalLinks').textContent = data.total_links;
+                document.getElementById('totalClicks').textContent = data.total_clicks;
+                document.getElementById('totalQrScans').textContent = data.total_qr_scans;
+            } catch (err) {
+                console.error('Failed to fetch stats:', err);
+            }
+        }
+
+        function getCookie(name) {
+            let val = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const c = cookies[i].trim();
+                    if (c.substring(0, name.length + 1) === (name + '=')) {
+                        val = decodeURIComponent(c.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return val;
+        }
+
+        // Load stats on page load.
+        updateStats();
+    </script>
+
+</body>
+</html>
