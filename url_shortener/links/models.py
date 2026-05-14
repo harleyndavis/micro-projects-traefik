@@ -9,6 +9,7 @@ class Link(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     clicks = models.IntegerField(default=0)
+    qr_scans = models.IntegerField(default=0)
 
     class Meta:
         ordering = ['-created_at']

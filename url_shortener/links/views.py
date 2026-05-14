@@ -40,7 +40,10 @@ class LinkViewSet(viewsets.ModelViewSet):
         """Redirect from short code to original URL"""
         try:
             link = Link.objects.get(short_code=short_code)
-            link.clicks += 1
+            if request.query_params.get('src') == 'qr':
+                link.qr_scans += 1
+            else:
+                link.clicks += 1
             link.save()
             return redirect(link.original_url)
         except Link.DoesNotExist:
@@ -51,9 +54,11 @@ class LinkViewSet(viewsets.ModelViewSet):
         """Get statistics about all shortened links"""
         total_links = Link.objects.count()
         total_clicks = Link.objects.aggregate(total=models.Sum('clicks'))['total'] or 0
+        total_qr_scans = Link.objects.aggregate(total=models.Sum('qr_scans'))['total'] or 0
         return Response({
             'total_links': total_links,
             'total_clicks': total_clicks,
+            'total_qr_scans': total_qr_scans,
         })
 
 from django.db import models

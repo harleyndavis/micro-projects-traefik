@@ -41,13 +41,23 @@ docker compose -f traefik/docker-compose.yml logs -f traefik
 
 ```
 traefik/
-├── docker-compose.yml        # Traefik + whoami; all routing via Docker labels
+├── docker-compose.yml        # Traefik + whoami (dev profile); all routing via Docker labels
 ├── .env.example              # Toggle local↔production via these three vars
 ├── certs/                    # mkcert certs (gitignored *.pem)
 ├── dynamic/
 │   ├── tls.yaml              # File-provider TLS cert paths (local dev only)
 │   └── dashboard-users.htpasswd
 └── letsencrypt/              # acme.json written here at runtime (gitignored)
+
+url_shortener/                # Django + PostgreSQL URL shortener microservice
+├── docker-compose.yml        # app + db services; joins external `proxy` network
+├── Dockerfile                # python:3.11-slim; runs gunicorn on port 8000
+├── .env.example              # mirrors traefik/.env.example vars + app-specific vars
+├── manage.py
+├── requirements.txt
+├── entrypoint.sh
+├── shortener/                # Django project (wsgi, settings)
+└── links/                    # URL shortening app (models, views, serializers)
 ```
 
 ### Dual-mode configuration
@@ -78,7 +88,23 @@ networks:
 
 Services that don't declare `traefik.enable=true` are invisible to Traefik (Docker provider `exposedByDefault: false`).
 
-The `example-app/` directory is the intended location for the first microservice added to the stack.
+The `whoami` service in `traefik/docker-compose.yml` is scoped to the `dev` Docker Compose profile and won't start in production unless `--profile dev` is passed.
+
+### url_shortener
+
+The first microservice in the stack. Runs Django + Gunicorn behind Traefik at `short.<TRAEFIK_DASHBOARD_HOST>`.
+
+**Start (local dev):**
+```bash
+cd url_shortener
+docker compose --env-file .env.example up -d --build
+```
+
+**Key behaviours:**
+- `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, and `CSRF_TRUSTED_ORIGINS` are all derived from `TRAEFIK_DASHBOARD_HOST` — no manual list needed.
+- `staticfiles` is a named Docker volume shared between the build step and the running container to avoid bind-mount permission errors.
+- The `db` healthcheck uses `pg_isready -U <user> -d <dbname>` so the app waits for the correct database, not just the server process.
+- `CERT_RESOLVER` is set on the router label (`tls.certresolver=${CERT_RESOLVER:-}`); an empty value disables ACME and falls back to the Traefik file-provider cert.
 
 ## Production Hardening
 

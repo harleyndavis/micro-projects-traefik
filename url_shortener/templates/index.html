@@ -212,6 +212,31 @@
             display: block;
         }
 
+        .qr-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+            padding-top: 16px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        #qrDisplay canvas, #qrDisplay img { display: block; }
+
+        .qr-actions {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .qr-link-btn {
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .loading {
             display: none;
             text-align: center;
@@ -268,6 +293,14 @@
                 <input type="text" id="shortUrl" class="short-link" readonly>
                 <button class="copy-btn" onclick="copyToClipboard()">Copy</button>
             </div>
+            <div class="qr-section">
+                <div class="result-label">QR Code</div>
+                <div id="qrDisplay"></div>
+                <div class="qr-actions">
+                    <button class="copy-btn" onclick="downloadQRCode()">Download PNG</button>
+                    <a id="qrFullLink" href="/qr/" target="_blank" class="copy-btn qr-link-btn">Full Generator</a>
+                </div>
+            </div>
         </div>
 
         <div class="stats-box" id="statsBox">
@@ -279,11 +312,17 @@
                 <div class="stats-number" id="totalClicks">0</div>
                 <div class="stats-label">Total Clicks</div>
             </div>
+            <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e0e0e0;">
+                <div class="stats-number" id="totalQrScans">0</div>
+                <div class="stats-label">QR Scans</div>
+            </div>
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
         const API_BASE = '/api';
+        let qrInstance = null;
 
         document.getElementById('shortenForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -314,6 +353,7 @@
                 const data = await response.json();
                 document.getElementById('shortUrl').value = data.short_url;
                 resultDiv.classList.add('show');
+                generateQRCode(data.short_url);
                 urlInput.value = '';
 
                 updateStats();
@@ -324,6 +364,30 @@
                 loadingDiv.classList.remove('show');
             }
         });
+
+        function generateQRCode(shortUrl) {
+            const trackedUrl = shortUrl + '?src=qr';
+            const container = document.getElementById('qrDisplay');
+            container.innerHTML = '';
+            qrInstance = new QRCode(container, {
+                text: trackedUrl,
+                width: 180,
+                height: 180,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M,
+            });
+            document.getElementById('qrFullLink').href = '/qr/?url=' + encodeURIComponent(trackedUrl);
+        }
+
+        function downloadQRCode() {
+            const canvas = document.querySelector('#qrDisplay canvas');
+            if (!canvas) return;
+            const a = document.createElement('a');
+            a.download = 'qrcode.png';
+            a.href = canvas.toDataURL('image/png');
+            a.click();
+        }
 
         function copyToClipboard() {
             const shortUrl = document.getElementById('shortUrl');
@@ -344,6 +408,7 @@
                 const data = await response.json();
                 document.getElementById('totalLinks').textContent = data.total_links;
                 document.getElementById('totalClicks').textContent = data.total_clicks;
+                document.getElementById('totalQrScans').textContent = data.total_qr_scans;
             } catch (error) {
                 console.error('Failed to fetch stats:', error);
             }
