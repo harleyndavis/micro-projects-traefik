@@ -55,7 +55,6 @@ url_shortener/                # Django + PostgreSQL URL shortener microservice
 ├── .env.example              # mirrors traefik/.env.example vars + app-specific vars
 ├── manage.py
 ├── requirements.txt
-├── entrypoint.sh
 ├── shortener/                # Django project (wsgi, settings)
 ├── links/                    # URL shortening app (models, views, serializers)
 └── templates/
@@ -69,7 +68,7 @@ The same `docker-compose.yml` handles both environments. The three `.env` keys d
 
 | Key | Local dev | Production |
 |---|---|---|
-| `TRAEFIK_DASHBOARD_HOST` | `dev.localhost` | `yourdomain.com` |
+| `DOMAIN` | `dev.localhost` | `yourdomain.com` |
 | `ACME_EMAIL` | *(empty)* | `you@example.com` |
 | `CERT_RESOLVER` | *(empty)* | `letsencrypt` |
 
@@ -82,7 +81,7 @@ Add it to `docker-compose.yml` (or a new compose file that extends the `proxy` n
 ```yaml
 labels:
   - "traefik.enable=true"
-  - "traefik.http.routers.myapp.rule=Host(`myapp.${TRAEFIK_DASHBOARD_HOST}`)"
+  - "traefik.http.routers.myapp.rule=Host(`myapp.${DOMAIN}`)"
   - "traefik.http.routers.myapp.entrypoints=websecure"
   - "traefik.http.routers.myapp.tls.certresolver=${CERT_RESOLVER}"
 networks:
@@ -95,7 +94,7 @@ The `whoami` service in `traefik/docker-compose.yml` is scoped to the `dev` Dock
 
 ### url_shortener
 
-The first microservice in the stack. Runs Django + Gunicorn behind Traefik at `short.<TRAEFIK_DASHBOARD_HOST>`.
+The first microservice in the stack. Runs Django + Gunicorn behind Traefik at `short.<DOMAIN>`.
 
 **Start (local dev):**
 ```bash
@@ -104,8 +103,8 @@ docker compose --env-file .env.example up -d --build
 ```
 
 **Key behaviours:**
-- `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, and `CSRF_TRUSTED_ORIGINS` are all derived from `TRAEFIK_DASHBOARD_HOST` — no manual list needed.
-- `HOME_URL` is also derived from `TRAEFIK_DASHBOARD_HOST` as `https://www.{host}` and injected into every template via the context processor. Nav "Home" links and the brand link point here so they exit the shortener subdomain to the main site. No separate env var required.
+- `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, and `CSRF_TRUSTED_ORIGINS` are all derived from `DOMAIN` — no manual list needed.
+- `HOME_URL` is also derived from `DOMAIN` as `https://www.{host}` and injected into every template via the context processor. Nav "Home" links and the brand link point here so they exit the shortener subdomain to the main site. No separate env var required.
 - `staticfiles` is a named Docker volume shared between the build step and the running container to avoid bind-mount permission errors.
 - The `db` healthcheck uses `pg_isready -U <user> -d <dbname>` so the app waits for the correct database, not just the server process.
 - `CERT_RESOLVER` is set on the router label (`tls.certresolver=${CERT_RESOLVER:-}`); an empty value disables ACME and falls back to the Traefik file-provider cert.

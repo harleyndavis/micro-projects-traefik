@@ -1,3 +1,4 @@
 traefik/certs/*.pem
 traefik/letsencrypt/
 traefik/dynamic/dashboard-users.htpasswd
+**/.env

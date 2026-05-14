@@ -201,7 +201,7 @@ When deploying to production:
 1. Generate a strong `DJANGO_SECRET_KEY`
 2. Set `DEBUG=False`
 3. Use a strong database password
-4. Set `TRAEFIK_DASHBOARD_HOST` to your real domain — `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, and `CSRF_TRUSTED_ORIGINS` derive from it automatically
+4. Set `DOMAIN` to your real domain — `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, and `CSRF_TRUSTED_ORIGINS` derive from it automatically
 5. Set `CERT_RESOLVER=letsencrypt` (matches your Traefik `.env`)
 6. Implement rate limiting on the API
 7. Use managed PostgreSQL or set up regular backups

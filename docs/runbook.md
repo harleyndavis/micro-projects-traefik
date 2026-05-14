@@ -99,7 +99,7 @@ cat letsencrypt/acme.json | jq '.Certificates[0].Issued'
        - proxy
      labels:
        - "traefik.enable=true"
-       - "traefik.http.routers.myapp.rule=Host(`myapp.${TRAEFIK_DASHBOARD_HOST}`)"
+       - "traefik.http.routers.myapp.rule=Host(`myapp.${DOMAIN}`)"
        - "traefik.http.routers.myapp.entrypoints=websecure"
        - "traefik.http.routers.myapp.tls.certresolver=${CERT_RESOLVER}"
        - "traefik.http.services.myapp.loadbalancer.server.port=8080"
@@ -143,7 +143,7 @@ cat letsencrypt/acme.json | jq '.Certificates[0].Issued'
 
 **Cert errors:**
 - Verify `CERT_RESOLVER` environment variable is set correctly
-- Check `TRAEFIK_DASHBOARD_HOST` matches your domain
+- Check `DOMAIN` matches your domain
 - Review Traefik logs for ACME errors
 
 ---
