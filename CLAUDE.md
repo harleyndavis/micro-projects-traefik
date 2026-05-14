@@ -57,7 +57,10 @@ url_shortener/                # Django + PostgreSQL URL shortener microservice
 ├── requirements.txt
 ├── entrypoint.sh
 ├── shortener/                # Django project (wsgi, settings)
-└── links/                    # URL shortening app (models, views, serializers)
+├── links/                    # URL shortening app (models, views, serializers)
+└── templates/
+    ├── index.html            # URL shortener UI; auto-generates QR after shortening
+    └── qr_generator.html     # Standalone QR generator at /qr/ (text, vCard, Wi-Fi, email, SMS)
 ```
 
 ### Dual-mode configuration
@@ -105,6 +108,16 @@ docker compose --env-file .env.example up -d --build
 - `staticfiles` is a named Docker volume shared between the build step and the running container to avoid bind-mount permission errors.
 - The `db` healthcheck uses `pg_isready -U <user> -d <dbname>` so the app waits for the correct database, not just the server process.
 - `CERT_RESOLVER` is set on the router label (`tls.certresolver=${CERT_RESOLVER:-}`); an empty value disables ACME and falls back to the Traefik file-provider cert.
+
+### QR code integration
+
+QR codes are generated client-side using `qrcodejs` (loaded from CDN).
+
+**Shortener UI (`/`):** After a URL is shortened, a QR code is auto-generated inline. The encoded URL is `<short_url>?src=qr` so scans are tracked separately from direct link clicks in the `Link.qr_scans` field. The stats box shows QR Scans alongside Total Links and Total Clicks.
+
+**Standalone generator (`/qr/`):** Full-featured QR generator supporting text/URL, vCard, Wi-Fi, email, and SMS payloads. Accepts a `?url=` query parameter — the shortener's "Full Generator" button links here with the short URL pre-filled and auto-generated.
+
+**Tracking:** The redirect view at `/s/<code>` checks `?src=qr` and increments `qr_scans` instead of `clicks`. The `/api/links/stats/` endpoint exposes `total_qr_scans`.
 
 ## Production Hardening
 
