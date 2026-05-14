@@ -14,8 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Collect static files
-RUN python manage.py collectstatic --noinput || true
+# Ensure static source dir exists, then collect
+RUN mkdir -p static && python manage.py collectstatic --noinput || true
 
 # Create a non-root user
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
