@@ -4,7 +4,7 @@ import string
 import random
 
 class Link(models.Model):
-    original_url = models.URLField(max_length=2000)
+    original_url = models.URLField(max_length=2000, unique=True)
     short_code = models.CharField(max_length=10, unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

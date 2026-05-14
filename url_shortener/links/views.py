@@ -17,11 +17,14 @@ class LinkViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def shorten(self, request):
-        """Create a new shortened link"""
+        """Return existing short link for a URL, or create a new one."""
         serializer = LinkCreateSerializer(data=request.data)
         if serializer.is_valid():
-            link = Link.objects.create(original_url=serializer.validated_data['original_url'])
-            return Response(LinkSerializer(link, context={'request': request}).data, status=status.HTTP_201_CREATED)
+            link, created = Link.objects.get_or_create(
+                original_url=serializer.validated_data['original_url']
+            )
+            response_status = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+            return Response(LinkSerializer(link, context={'request': request}).data, status=response_status)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['get'])
