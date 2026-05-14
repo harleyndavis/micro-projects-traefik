@@ -79,12 +79,11 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-ASSETS_URL = os.getenv("ASSETS_URL", "")
-
-# Derived from TRAEFIK_DASHBOARD_HOST — the www root of the main site, used in
-# nav templates so "Home" links out of the shortener subdomain to www.
-_host = os.getenv("TRAEFIK_DASHBOARD_HOST", "localhost")
+_host = os.getenv("DOMAIN", "localhost")
+# www root of the main site — used in nav links and shared asset URLs so
+# templates can reach outside the shortener subdomain.
 HOME_URL = f"https://www.{_host}"
+ASSETS_URL = HOME_URL
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"

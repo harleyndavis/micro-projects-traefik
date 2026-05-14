@@ -5,6 +5,7 @@ This repository contains a small Traefik reverse-proxy stack that supports both 
 Current layout:
 
 ```text
+Makefile              ← top-level commands for managing all services
 docs/
   automating-deployment-summary.md
   production-hardening.md
@@ -17,13 +18,33 @@ traefik/
     dashboard-users.htpasswd.example
     tls.yaml
   letsencrypt/
-url_shortener/        ← example Django microservice
+static_site/          ← nginx serving the www landing page
+  docker-compose.yml
+  .env.example
+  html/
+url_shortener/        ← Django URL shortener microservice
   docker-compose.yml
   Dockerfile
   .env.example
 ```
 
 The active Traefik stack lives in `traefik/`.
+
+## Quick Start
+
+The root `Makefile` manages all services. From the repo root:
+
+```bash
+make setup   # copy .env.example → .env for each service
+make up      # start traefik, static_site, and url_shortener
+make down    # stop everything
+make ps      # container status across all services
+make help    # full target list
+```
+
+Individual services: `make up-traefik`, `make up-static`, `make up-shortener`, etc.
+
+---
 
 ## What This Stack Does
 
@@ -33,6 +54,14 @@ The active Traefik stack lives in `traefik/`.
 - Loads dynamic Traefik config from `traefik/dynamic/tls.yaml`
 - Includes a `whoami` test container for validating routing
 - Supports **local dev** (file-based certs via `traefik/certs/`) and **production** (Let's Encrypt via TLS challenge)
+
+**Services behind Traefik:**
+
+| Service | Host | Description |
+|---|---|---|
+| Traefik dashboard | `<host>/dashboard/` | Routing UI, basic auth protected |
+| static_site | `www.<host>` | nginx landing page |
+| url_shortener | `short.<host>` | Django URL shortener with QR codes |
 
 ---
 
@@ -87,7 +116,7 @@ cp .env.example .env
 Leave `ACME_EMAIL` and `CERT_RESOLVER` empty (their defaults). Set the host:
 
 ```env
-TRAEFIK_DASHBOARD_HOST=dev.localhost
+DOMAIN=dev.localhost
 ACME_EMAIL=
 CERT_RESOLVER=
 ```
@@ -196,7 +225,7 @@ cp .env.example .env
 Edit `.env` and set all three values:
 
 ```env
-TRAEFIK_DASHBOARD_HOST=example.com
+DOMAIN=example.com
 ACME_EMAIL=you@example.com
 CERT_RESOLVER=letsencrypt
 ```
@@ -257,3 +286,5 @@ For a starting follow-up checklist, see `docs/production-hardening.md`.
 
 - The dashboard router matches both `/dashboard/` and `/api` — both paths are required for the dashboard UI to function correctly.
 - `docs/automating-deployment-summary.md` contains broader deployment notes, but this README is the source of truth for the Traefik stack.
+- See `static_site/README.md` for the landing page service.
+- See `url_shortener/README.md` for the URL shortener (QR codes, API docs, dev tips).

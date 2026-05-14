@@ -60,13 +60,13 @@ services:
       - "traefik.enable=true"
 
       # Dashboard router
-      - "traefik.http.routers.dashboard.rule=(Host(`dashboard.${TRAEFIK_DASHBOARD_HOST:-localhost}`) || (Host(`${TRAEFIK_DASHBOARD_HOST:-localhost}`)) && (PathPrefix(`/dashboard/`) || PathPrefix(`/api`)))"
+      - "traefik.http.routers.dashboard.rule=(Host(`dashboard.${DOMAIN:-localhost}`) || (Host(`${DOMAIN:-localhost}`)) && (PathPrefix(`/dashboard/`) || PathPrefix(`/api`)))"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.tls=true"
 
       # Redirect /dashboard to /dashboard/
-      - "traefik.http.routers.dashboard-redirect.rule=(Host(`${TRAEFIK_DASHBOARD_HOST:-localhost}`)) && Path(`/dashboard`)"
+      - "traefik.http.routers.dashboard-redirect.rule=(Host(`${DOMAIN:-localhost}`)) && Path(`/dashboard`)"
       - "traefik.http.routers.dashboard-redirect.entrypoints=websecure"
       - "traefik.http.routers.dashboard-redirect.tls=true"
       - "traefik.http.routers.dashboard-redirect.service=noop@internal"
@@ -89,7 +89,7 @@ services:
       - proxy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.whoami.rule=(Host(`whoami.${TRAEFIK_DASHBOARD_HOST:-localhost}`) || (Host(`${TRAEFIK_DASHBOARD_HOST:-localhost}`)) && PathPrefix(`/whoami`))"
+      - "traefik.http.routers.whoami.rule=(Host(`whoami.${DOMAIN:-localhost}`) || (Host(`${DOMAIN:-localhost}`)) && PathPrefix(`/whoami`))"
       - "traefik.http.routers.whoami.entrypoints=websecure"
       - "traefik.http.routers.whoami.tls=true"
 
