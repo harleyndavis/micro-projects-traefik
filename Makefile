@@ -1,3 +1,10 @@
+ifeq ($(OS),Windows_NT)
+    SHELL := powershell.exe
+	.SHELLFLAGS := -NoProfile -Command
+else
+    SHELL := /bin/bash
+endif
+
 .PHONY: up down ps build setup superuser clean clean-data \
         up-traefik up-static up-shortener \
         down-traefik down-static down-shortener \
@@ -8,6 +15,11 @@
 SUPER_USER  ?= admin
 SUPER_EMAIL ?= admin@example.com
 SUPER_PASS  ?=
+
+# Auto-discover all service .env.example files one level deep
+SERVICE_ENV_EXAMPLES := $(wildcard */.env.example)
+SERVICE_ENVS         := $(patsubst %.example,%,$(SERVICE_ENV_EXAMPLES))
+
 
 # Start all services (traefik first — it owns the proxy network)
 up: up-traefik up-static up-shortener
@@ -48,35 +60,31 @@ restart-shortener: down-shortener up-shortener
 
 # ── Setup ──────────────────────────────────────────────────────────────────────
 
-setup:
-ifeq ($(wildcard .env),)
-	cp .env.example .env
-	@echo [ok] .env created from .env.example -- review before running
-else
-	@echo [ok] .env already exists
-endif
-ifeq ($(wildcard url_shortener/.env),)
-	cp url_shortener/.env.example url_shortener/.env
-	@echo [ok] url_shortener/.env created from .env.example -- review before running
-else
-	@echo [ok] url_shortener/.env already exists
-endif
+setup: .env $(SERVICE_ENVS)
+
+.env: .env.example
+	cp $< $@ 
+	@echo "[ok] Created $@ -- review before running"
+
+%/.env: %/.env.example
+	cp $< $@ 
+	@echo "[ok] Created $@ -- review before running"
 
 # ── Superuser ──────────────────────────────────────────────────────────────────
 
 superuser:
-	@if [ -n "$(SUPER_PASS)" ]; then \
-		docker compose --env-file .env --project-directory url_shortener -f url_shortener/docker-compose.yml exec \
-			-e DJANGO_SUPERUSER_USERNAME=$(SUPER_USER) \
-			-e DJANGO_SUPERUSER_EMAIL=$(SUPER_EMAIL) \
-			-e DJANGO_SUPERUSER_PASSWORD=$(SUPER_PASS) \
-			app python manage.py createsuperuser --noinput; \
-	else \
-		docker compose --env-file .env --project-directory url_shortener -f url_shortener/docker-compose.yml exec \
-			-e DJANGO_SUPERUSER_USERNAME=$(SUPER_USER) \
-			-e DJANGO_SUPERUSER_EMAIL=$(SUPER_EMAIL) \
-			app python manage.py createsuperuser; \
-	fi
+ifeq ($(SUPER_PASS),)
+	docker compose --env-file .env --project-directory url_shortener -f url_shortener/docker-compose.yml exec \
+		-e DJANGO_SUPERUSER_USERNAME=$(SUPER_USER) \
+		-e DJANGO_SUPERUSER_EMAIL=$(SUPER_EMAIL) \
+		app python manage.py createsuperuser
+else
+	docker compose --env-file .env --project-directory url_shortener -f url_shortener/docker-compose.yml exec \
+		-e DJANGO_SUPERUSER_USERNAME=$(SUPER_USER) \
+		-e DJANGO_SUPERUSER_EMAIL=$(SUPER_EMAIL) \
+		-e DJANGO_SUPERUSER_PASSWORD=$(SUPER_PASS) \
+		app python manage.py createsuperuser --noinput
+endif
 
 # ── Clean ──────────────────────────────────────────────────────────────────────
 
@@ -88,10 +96,13 @@ clean:
 
 # Remove containers, orphans, and ALL named volumes — destroys the database
 clean-data:
-	@read -p "WARNING: This deletes all volumes including the PostgreSQL database. Type 'yes' to continue: " confirm; \
-	if [ "$$confirm" != "yes" ]; then echo "Aborted."; exit 1; fi; \
-	docker compose --env-file .env --project-directory url_shortener -f url_shortener/docker-compose.yml down -v --remove-orphans; \
-	docker compose --env-file .env --project-directory static_site -f static_site/docker-compose.yml down -v --remove-orphans; \
+ifeq ($(OS),Windows_NT)
+	@$$confirm = Read-Host 'WARNING: This deletes all volumes including the PostgreSQL database. Type yes to continue'; if ($$confirm -ne 'yes') { Write-Host 'Aborted.'; exit 1 }
+else
+	@read -p "WARNING: This deletes all volumes including the PostgreSQL database. Type 'yes' to continue: " confirm; if [ "$$confirm" != "yes" ]; then echo "Aborted."; exit 1; fi
+endif
+	docker compose --env-file .env --project-directory url_shortener -f url_shortener/docker-compose.yml down -v --remove-orphans
+	docker compose --env-file .env --project-directory static_site -f static_site/docker-compose.yml down -v --remove-orphans
 	docker compose --env-file .env --project-directory traefik -f traefik/docker-compose.yml down -v --remove-orphans
 
 # ── Build ──────────────────────────────────────────────────────────────────────
