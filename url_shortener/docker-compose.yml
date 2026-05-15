@@ -18,6 +18,8 @@ services:
     env_file:
       - ../.env
       - .env
+    environment:
+      - SITE_NAME=${SITE_NAME:-${DOMAIN}}
     depends_on:
       db:
         condition: service_healthy
