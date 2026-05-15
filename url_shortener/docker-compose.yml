@@ -1,16 +1,14 @@
 services:
   db:
     image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: ${DB_NAME:-shortener}
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    env_file:
+      - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - proxy
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-shortener}" ]
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
       interval: 10s
       timeout: 5s
       retries: 5
