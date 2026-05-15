@@ -159,4 +159,4 @@ help:
 	@$(info )
 	@$(info   clean              Remove containers and locally built images (volumes kept))
 	@$(info   clean-data         Remove containers and ALL volumes -- destroys the database)
-	@:
+	@if [ -n "$$@" ]; then true; fi
