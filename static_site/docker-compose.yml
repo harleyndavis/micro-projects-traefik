@@ -4,6 +4,8 @@ services:
     restart: unless-stopped
     env_file:
       - ../.env
+    environment:
+      SITE_NAME: ${SITE_NAME:-${DOMAIN}}
     volumes:
       - ./html:/usr/share/nginx/html:ro
       - ./nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
@@ -11,7 +13,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.static_site.rule=Host(`www.${DOMAIN}`)"
       - "traefik.http.routers.static_site.entrypoints=websecure"
-      - "traefik.http.routers.static_site.tls.certresolver=${CERT_RESOLVER:-}"
+      - "traefik.http.routers.static_site.tls.certresolver=${CERT_RESOLVER}"
     networks:
       - proxy
 
