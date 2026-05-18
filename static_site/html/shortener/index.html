@@ -1,20 +1,35 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener · {{ SITE_NAME }}</title>
 
-{% block title %}URL Shortener · {{ SITE_NAME }}{% endblock %}
+    <script>
+      (function () {
+        var m = document.cookie.match(/(?:^|; )site-theme=([^;]*)/);
+        var v = m ? decodeURIComponent(m[1]) : null;
+        if (v === 'light' || v === 'dark') {
+          document.documentElement.setAttribute('data-theme', v);
+        }
+      })();
+    </script>
 
-{% block content %}
-    <!-- ═══════════════ Main ═══════════════ -->
+    <link rel="stylesheet" href="{{ HOME_URL }}/css/site.css">
+</head>
+<body class="with-grid">
+
+    <!--#include virtual="/_partials/header.html" -->
+
     <main class="main">
         <div class="content narrow">
 
-            <!-- ── Hero ─────────────────────────────── -->
             <header>
                 <p class="eyebrow">// utility</p>
                 <h1 class="h1 small">URL<span class="accent">_</span>SHORT</h1>
                 <p class="tagline">Shorten long URLs and grab a QR in one go.</p>
             </header>
 
-            <!-- ── Input form ───────────────────────── -->
             <form id="shortenForm" class="card card-stack" novalidate>
                 <div>
                     <label class="field-label" for="urlInput">Original URL</label>
@@ -33,7 +48,6 @@
                 <div class="error" id="error"></div>
             </form>
 
-            <!-- ── Result (hidden until submit) ────── -->
             <div class="card result" id="result" hidden>
                 <div>
                     <label class="field-label" for="shortUrl">Shortened</label>
@@ -57,7 +71,6 @@
                 </div>
             </div>
 
-            <!-- ── Stats ───────────────────────────── -->
             <div>
                 <div class="card">
                     <h2 class="section-head">
@@ -82,9 +95,10 @@
 
         </div>
     </main>
-{% endblock %}
 
-{% block scripts %}
+    <!--#include virtual="/_partials/footer.html" -->
+    <!--#include virtual="/_partials/theme-script.html" -->
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
         const API_BASE = '/api';
@@ -106,10 +120,7 @@
             try {
                 const response = await fetch(`${API_BASE}/links/shorten/`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCookie('csrftoken'),
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ original_url: urlInput.value }),
                 });
 
@@ -179,21 +190,7 @@
             }
         }
 
-        function getCookie(name) {
-            let val = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const c = cookies[i].trim();
-                    if (c.substring(0, name.length + 1) === (name + '=')) {
-                        val = decodeURIComponent(c.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return val;
-        }
-
         updateStats();
     </script>
-{% endblock %}
+</body>
+</html>
